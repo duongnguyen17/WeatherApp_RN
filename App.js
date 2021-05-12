@@ -7,7 +7,11 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator>
-        <Stack.Screen component={MainView} name="MainView" />
+        <Stack.Screen
+          component={MainView}
+          name="MainView"
+          options={{headerShown: false}}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,10 +1,4 @@
-import React, {
-  useLayoutEffect,
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
 import {
   SafeAreaView,
   Text,
@@ -97,36 +91,6 @@ export default function MainView(props) {
     setError('');
     await getInformaiton();
   };
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <TouchableOpacity
-          style={{marginLeft: 10}}
-          onPress={() => {
-            setDrawer(true);
-          }}>
-          <Octicons name="three-bars" size={26} color="#a6a6a6" />
-        </TouchableOpacity>
-      ),
-      headerTitle: () => (
-        <View>
-          <TextInput
-            placeholder="Search place"
-            defaultValue={input.current}
-            onChangeText={text => {
-              input.current = text;
-            }}
-          />
-        </View>
-      ),
-      headerRight: () => (
-        <TouchableOpacity style={{marginRight: 10}} onPress={changeCity}>
-          <Octicons name="search" size={26} color="#a6a6a6" />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
   const onRefresh = () => {
     setLoading(true);
     getInformaiton();
@@ -135,53 +99,81 @@ export default function MainView(props) {
     }, 2000);
   };
 
-  const drawerContent = useCallback(
-    () => (
-      <View style={{backgroundColor: '#fff', flex:1, padding:10}}>
-        <View style={{height: 100, backgroundColor: '#99ccff'}}></View>
-        <View>
-          <View style={{flexDirection: 'row', marginTop: 20}}>
-            <TouchableOpacity
-              style={{
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: 40,
-                height: 30,
-                backgroundColor: unit === '°C' ? 'gray' : '#fff',
-              }}
-              onPress={() => {
-                setUnit('°C');
-              }}>
-              <Text>°C</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={{
-                justifyContent: 'center',
-                alignItems: 'center',
-                width: 40,
-                height: 30,
-                backgroundColor: unit === '°F' ? 'gray' : '#fff',
-              }}
-              onPress={() => {
-                setUnit('°F');
-              }}>
-              <Text>°F</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    ),
-    [drawer],
-  );
   return (
     <SafeAreaView style={styles.container}>
       <MenuDrawer
         open={drawer}
-        drawerContent={drawerContent}
+        drawerContent={
+          <View style={{backgroundColor: '#fff', flex: 1}}>
+            <View style={{height: 100, backgroundColor: '#99ccff'}}></View>
+            <View style={{marginTop: 30, marginHorizontal: 20}}>
+              <Text style={{fontWeight: 'bold', fontSize: 20}}>Unit</Text>
+              <View style={{flexDirection: 'row', marginTop: 20}}>
+                <TouchableOpacity
+                  style={{
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    width: 40,
+                    height: 30,
+                    borderRadius: 3,
+                    backgroundColor: unit === '°C' ? '#d9d9d9' : '#fff',
+                  }}
+                  onPress={() => {
+                    setDrawer(false);
+                    setUnit('°C');
+                  }}>
+                  <Text style={{fontSize: 20}}>°C</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginLeft: 20,
+                    width: 40,
+                    height: 30,
+                    borderRadius: 3,
+                    backgroundColor: unit === '°F' ? '#d9d9d9' : '#fff',
+                  }}
+                  onPress={() => {
+                    setDrawer(false);
+                    setUnit('°F');
+                  }}>
+                  <Text style={{fontSize: 20}}>°F</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        }
         drawerPercentage={80}
-        opacity={0.7}>
+        opacity={0.4}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={{marginLeft: 10}}
+            onPress={() => {
+              setDrawer(true);
+            }}>
+            <Octicons name="three-bars" size={26} color="#a6a6a6" />
+          </TouchableOpacity>
+          <View style={{marginHorizontal: 20, flex: 1}}>
+            <TextInput
+              style={{backgroundColor: '#f2f2f2', height: 40, borderRadius: 5}}
+              placeholder="Search place"
+              defaultValue={input.current}
+              onChangeText={text => {
+                input.current = text;
+              }}
+            />
+          </View>
+          <TouchableOpacity style={{marginRight: 10}} onPress={changeCity}>
+            <Octicons name="search" size={20} color="#a6a6a6" />
+          </TouchableOpacity>
+        </View>
         <TouchableWithoutFeedback
-          onPress={Keyboard.dismiss}
+          onPress={() => {
+            setDrawer(false);
+            console.log(`drawer`, drawer);
+            Keyboard.dismiss();
+          }}
           style={styles.container}>
           <ScrollView
             refreshControl={
@@ -189,7 +181,7 @@ export default function MainView(props) {
             }>
             <View
               style={{
-                height: ScreenHeight - HeaderHeight,
+                height: ScreenHeight - 60,
                 backgroundColor: '#66b3ff',
               }}>
               <Text>{error}</Text>
@@ -200,46 +192,69 @@ export default function MainView(props) {
                   }}>
                   <View style={{flexDirection: 'row', alignItems: 'center'}}>
                     <Text
-                      style={{color: '#fff', fontSize: 20, fontWeight: '700'}}>
+                      style={[
+                        {color: '#fff', fontSize: 20, fontWeight: '700'},
+                        styles.text,
+                      ]}>
                       Max{' '}
                       {unit === '°C'
                         ? Math.floor(information.main.temp_max - 272.15)
-                        : Math.floor(information.main.temp_max - -457.87)}
+                        : Math.floor(
+                            (information.main.temp_max * 9) / 5 - 459.67,
+                          )}
                       °
                     </Text>
                     <Text
-                      style={{
-                        color: '#fff',
-                        marginLeft: 10,
-                        fontSize: 20,
-                        fontWeight: '700',
-                      }}>
+                      style={[
+                        {
+                          color: '#fff',
+                          marginLeft: 10,
+                          fontSize: 20,
+                          fontWeight: '700',
+                        },
+                        styles.text,
+                      ]}>
                       Min{' '}
                       {unit === '°C'
                         ? Math.floor(information.main.temp_min - 272.15)
-                        : Math.floor(information.main.temp_min - -457.87)}
+                        : Math.floor(
+                            (information.main.temp_min * 9) / 5 - 459.67,
+                          )}
                       °
                     </Text>
                   </View>
                   <View style={{flexDirection: 'row', marginVertical: 16}}>
                     <Text
-                      style={{
-                        color: '#fff',
-                        fontSize: 100,
-                        fontWeight: 'bold',
-                      }}>
+                      style={[
+                        {color: '#fff', fontSize: 100, fontWeight: 'bold'},
+                        styles.text,
+                      ]}>
                       {unit === '°C'
                         ? Math.floor(information.main.temp - 272.15)
-                        : Math.floor(information.main.temp - -457.87)}
+                        : Math.floor((information.main.temp * 9) / 5 - 459.67)}
                     </Text>
-                    <Text style={{fontSize: 50, color: '#fff'}}>{unit}</Text>
+                    <Text
+                      style={[
+                        {
+                          fontSize: 50,
+                          color: '#fff',
+                        },
+                        styles.text,
+                      ]}>
+                      {unit}
+                    </Text>
                   </View>
                   <Text
-                    style={{color: '#fff', fontSize: 20, fontWeight: '700'}}>
+                    style={[
+                      {color: '#fff', fontSize: 20, fontWeight: '700'},
+                      styles.text,
+                    ]}>
                     Feels like{' '}
                     {unit === '°C'
                       ? Math.floor(information.main.feels_like - 272.15)
-                      : Math.floor(information.main.feels_like - -457.87)}
+                      : Math.floor(
+                          (information.main.feels_like * 9) / 5 - 459.67,
+                        )}
                     °
                   </Text>
                 </View>
@@ -251,11 +266,21 @@ export default function MainView(props) {
                     }}
                   />
                   <Text
-                    style={{color: '#fff', fontSize: 30, fontWeight: '700'}}>
+                    style={[
+                      {
+                        color: '#fff',
+                        fontSize: 30,
+                        fontWeight: '700',
+                      },
+                      styles.text,
+                    ]}>
                     {information.weather[0].main}
                   </Text>
                   <Text
-                    style={{color: '#fff', fontSize: 20, fontWeight: '700'}}>
+                    style={[
+                      {color: '#fff', fontSize: 20, fontWeight: '700'},
+                      styles.text,
+                    ]}>
                     {information.weather[0].description}
                   </Text>
                 </View>
@@ -300,10 +325,28 @@ export default function MainView(props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  scrollView: {
     backgroundColor: '#66b3ff',
   },
+  header: {
+    marginTop: 5,
+    borderRadius: 5,
+    marginHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 60,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  // scrollView: {
+  //   backgroundColor: '#66b3ff',
+  // },
   mainWeather: {
     flexDirection: 'row',
     marginTop: 30,
@@ -311,16 +354,22 @@ const styles = StyleSheet.create({
   },
   sectionView: {
     marginHorizontal: 10,
-    marginTop: 10,
+    marginVertical: 10,
     backgroundColor: '#fff',
   },
   insectionView: {
     marginVertical: 20,
-    marginHorizontal: 10,
+    marginTop: 10,
   },
   column: {
     width: Math.floor((3 * ScreenWidth) / 8),
     flexDirection: 'column',
   },
   row: {marginVertical: 5},
+  text: {
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 4,
+    shadowOpacity: 0.25,
+    textShadowColor: '#000',
+  },
 });
