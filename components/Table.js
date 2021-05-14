@@ -10,7 +10,7 @@ export default function Table(props) {
     setArrKey(props.arrKey);
     setArrValue(props.arrValue);
     setTitle(props.title);
-  }, []);
+  }, );
   return (
     <View style={styles.insectionView}>
       <Text style={{fontSize: 17, fontWeight: '700'}}>{title}</Text>
