@@ -1643,7 +1643,11 @@ export default function MainView(props) {
       information.list[selectedTime + 1].wind.gust + ' m/s',
     ]);
     setArrValClound([information.list[selectedTime + 1].clouds.all + ' %']);
-    setArrValVisibility([information.list[selectedTime + 1].visibility + ' m']);
+    setArrValVisibility([
+      information.list[selectedTime + 1].visibility
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m',
+    ]);
     console.log(`arrValTemp`, arrValTemp);
   }, [information, selectedTime, unit]);
   useEffect(() => {
@@ -1657,15 +1661,18 @@ export default function MainView(props) {
   const setInforTemp = () => {
     if (unit === '°C') {
       return [
-        Math.floor(information.list[selectedTime + 1].main.temp - 272.15) +
-          ' °',
-        Math.floor(
+        Number.parseFloat(
+          information.list[selectedTime + 1].main.temp - 272.15,
+        ).toFixed(1) + ' °',
+        Number.parseFloat(
           information.list[selectedTime + 1].main.feels_like - 272.15,
-        ) + ' °',
-        Math.floor(information.list[selectedTime + 1].main.temp_min - 272.15) +
-          ' °',
-        Math.floor(information.list[selectedTime + 1].main.temp_max - 272.15) +
-          ' °',
+        ).toFixed(1) + ' °',
+        Number.parseFloat(
+          information.list[selectedTime + 1].main.temp_min - 272.15,
+        ).toFixed(1) + ' °',
+        Number.parseFloat(
+          information.list[selectedTime + 1].main.temp_max - 272.15,
+        ).toFixed(1) + ' °',
         information.list[selectedTime + 1].main.pressure
           .toString()
           .replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' hPa',
@@ -1676,18 +1683,18 @@ export default function MainView(props) {
       ];
     } else {
       return [
-        Math.floor(
+        Number.parseFloat(
           (information.list[selectedTime + 1].main.temp * 9) / 5 - 459.67,
-        ) + ' °',
-        Math.floor(
+        ).toFixed(1) + ' °',
+        Number.parseFloat(
           (information.list[selectedTime + 1].main.feels_like * 9) / 5 - 459.67,
-        ) + ' °',
-        Math.floor(
+        ).toFixed(1) + ' °',
+        Number.parseFloat(
           (information.list[selectedTime + 1].main.temp_min * 9) / 5 - 459.67,
-        ) + ' °',
-        Math.floor(
+        ).toFixed(1) + ' °',
+        Number.parseFloat(
           (information.list[selectedTime + 1].main.temp_max * 9) / 5 - 459.67,
-        ) + ' °',
+        ).toFixed(1) + ' °',
         information.list[selectedTime + 1].main.pressure
           .toString()
           .replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' hPa',
