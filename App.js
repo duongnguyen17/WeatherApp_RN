@@ -3,7 +3,7 @@ import {NavigationContainer} from '@react-navigation/native';
 import MainView from './screens/MainView';
 import {createStackNavigator} from '@react-navigation/stack';
 const Stack = createStackNavigator();
-export default function App() {
+const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator>
@@ -15,4 +15,6 @@ export default function App() {
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
+
+export default App;

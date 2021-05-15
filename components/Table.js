@@ -10,22 +10,24 @@ export default function Table(props) {
     setArrKey(props.arrKey);
     setArrValue(props.arrValue);
     setTitle(props.title);
-  }, );
+  });
   return (
     <View style={styles.insectionView}>
-      <Text style={{fontSize: 17, fontWeight: '700'}}>{title}</Text>
-      <View style={{marginTop: 20, flexDirection: 'row'}}>
+      <Text style={{fontSize: 17, fontWeight: '700', marginLeft: 10}}>
+        {title}
+      </Text>
+      <View style={{marginTop: 20, marginHorizontal: 35, flexDirection: 'row'}}>
         <View style={styles.column}>
           {arrKey.map((value, index) => (
             <View key={index} style={styles.row}>
-              <Text>{value}</Text>
+              <Text style={{color: '#737373'}}>{value}</Text>
             </View>
           ))}
         </View>
         <View style={styles.column}>
           {arrValue.map((value, index) => (
             <View key={index} style={styles.row}>
-              <Text>{value}</Text>
+              <Text style={{color: '#262626'}}>{value}</Text>
             </View>
           ))}
         </View>
@@ -35,6 +37,7 @@ export default function Table(props) {
 }
 const styles = StyleSheet.create({
   insectionView: {
+    backgroundColor: '#fff',
     marginVertical: 20,
     marginHorizontal: 10,
   },
