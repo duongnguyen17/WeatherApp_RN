@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {StyleSheet, View, Text} from 'react-native';
 import {ScreenWidth} from '../screens/MainView';
 
-export default function Table(props) {
+const Table = props => {
   const [title, setTitle] = useState('');
   const [arrKey, setArrKey] = useState([]);
   const [arrValue, setArrValue] = useState([]);
@@ -13,9 +13,12 @@ export default function Table(props) {
   });
   return (
     <View style={styles.insectionView}>
-      <Text style={{fontSize: 17, fontWeight: '700', marginLeft: 10}}>
-        {title}
-      </Text>
+      {title === '' ? null : (
+        <Text style={{fontSize: 17, fontWeight: '700', marginLeft: 10}}>
+          {title}
+        </Text>
+      )}
+
       <View style={{marginTop: 20, marginHorizontal: 35, flexDirection: 'row'}}>
         <View style={styles.column}>
           {arrKey.map((value, index) => (
@@ -34,12 +37,10 @@ export default function Table(props) {
       </View>
     </View>
   );
-}
+};
 const styles = StyleSheet.create({
   insectionView: {
     backgroundColor: '#fff',
-    marginVertical: 20,
-    marginHorizontal: 10,
   },
   column: {
     width: 200,
@@ -47,3 +48,4 @@ const styles = StyleSheet.create({
   },
   row: {marginVertical: 5},
 });
+export default Table;
