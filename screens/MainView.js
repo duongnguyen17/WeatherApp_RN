@@ -12,38 +12,26 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  Animated,
   Dimensions,
 } from 'react-native';
 import Octicons from 'react-native-vector-icons/Octicons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import {AreaChart} from 'react-native-svg-charts';
-import {Defs, LinearGradient, Stop} from 'react-native-svg';
-import MenuDrawer from 'react-native-side-drawer';
+import Gradient from '../components/Gradient';
+// import MenuDrawer from 'react-native-side-drawer';
 import {TabView, TabBar, SceneMap} from 'react-native-tab-view';
-import {getByName} from '../backend/index';
+import {
+  getByName,
+  getSavedCities,
+  saveCity,
+  deleteCity,
+} from '../backend/index';
 import Table from '../components/Table';
 import TagDay from '../components/TagDay';
+import Drawer from '../components/Drawer';
 export const ScreenWidth = Math.floor(Dimensions.get('screen').width);
 export const ScreenHeight = Math.floor(Dimensions.get('screen').height);
-
-const Gradient = ({index, data}) => (
-  <Defs key={index}>
-    <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
-      {data.map((value, index) => {
-        return (
-          <Text
-            key={index}
-            style={{...styles.text, fontSize: 16, color: '#fff'}}>
-            {value}°
-          </Text>
-        );
-      })}
-    </View>
-    <LinearGradient id={'gradient'} x1={'0%'} y1={'0%'} x2={'0%'} y2={'100%'}>
-      <Stop offset={'0%'} stopColor={'#d9d9d9'} stopOpacity={1} />
-      <Stop offset={'50%'} stopColor={'#99ddff'} stopOpacity={0.01} />
-    </LinearGradient>
-  </Defs>
-);
 
 const MainView = props => {
   const [navigationState, setNavigationState] = useState({
@@ -1161,7 +1149,6 @@ const MainView = props => {
     state_code: '44',
   });
 
-  const [drawer, setDrawer] = useState(false);
   const [dataChart, setDataChart] = useState(() => {
     let arr = [];
     if (unit === '°C') {
@@ -1195,53 +1182,38 @@ const MainView = props => {
   const [arrValClound, setArrValClound] = useState([]);
   const [arrValVisibility, setArrValVisibility] = useState([]);
   const [arrValInfor, setArrValInfor] = useState([]);
-
+  // const [savedCities, setSavedCities] = useState([]);
+  const [isSave, setIsSave] = useState(false);
+  let widthDrawer = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     getInformaiton();
+    // getSaved();
   }, []);
-  useEffect(() => {
-    setDataChart(() => {
-      let arr = [];
-      if (unit === '°C') {
-        for (var i = 1; i < 9; ++i) {
-          arr.push(Math.floor(hourInfor.list[i].main.temp - 272.15));
-        }
-      } else {
-        for (var i = 1; i < 9; ++i) {
-          arr.push(Math.floor((hourInfor.list[i].main.temp * 9) / 5 - 459.67));
-        }
-      }
 
-      return arr;
-    });
-    setDataTime(() => {
-      let arr = [];
-      for (var i = 1; i < 9; ++i) {
-        arr.push({
-          icon: hourInfor.list[i].weather[0].icon,
-          time: hourInfor.list[i].dt_txt.slice(11, 16),
-        });
-      }
-      //console.log(`arr`, arr);
-      return arr;
-    });
+  useEffect(() => {
+    let dataChartTemp = calDataChart();
+    setDataChart(dataChartTemp);
+    let dataTimeTemp = calDataTime();
+    setDataTime(dataTimeTemp);
   }, [unit, hourInfor]);
 
   useEffect(() => {
-    setArrValTemp(setInforTemp);
+    let inforTemp = setInforTemp();
+    setArrValTemp(inforTemp);
     setArrValWind([
       hourInfor.list[selectedTime + 1].wind.speed + ' m/s',
-      hourInfor.list[selectedTime + 1].wind.deg,
+      hourInfor.list[selectedTime + 1].wind.deg + ' °',
       hourInfor.list[selectedTime + 1].wind.gust + ' m/s',
     ]);
     setArrValClound([hourInfor.list[selectedTime + 1].clouds.all + ' %']);
     setArrValVisibility([
-      hourInfor.list[selectedTime + 1].visibility
+      Number.parseFloat(hourInfor.list[selectedTime + 1].visibility / 1000)
+        .toFixed(2)
         .toString()
-        .replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' m',
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ',') + ' km',
     ]);
-    //console.log(`arrValTemp`, arrValTemp);
   }, [hourInfor, selectedTime, unit]);
+
   useEffect(() => {
     setArrValInfor([
       hourInfor.city.name,
@@ -1250,6 +1222,55 @@ const MainView = props => {
       hourInfor.city.coord.lon,
     ]);
   }, [hourInfor]);
+
+  //lấy thông tin thời tiết
+  async function getInformaiton() {
+    const result = await getByName(input.current);
+    //console.log('infor', result);
+    if (result !== undefined) {
+      setHourInfor(result.hour);
+      setDayInfor(result.day);
+    } else showToast();
+  }
+
+  //lấy danh sách địa điểm đã lưu
+  // const getSaved = async () => {
+  //   let savedCitiesTemp = await getSavedCities();
+  //   //console.log(`savedCitiesTemp`, savedCitiesTemp)
+  //   setSavedCities(savedCitiesTemp);
+  //   if (savedCities.find(dayInfor.city_name)) {
+  //     setIsSave(true);
+  //   } else {
+  //     setIsSave(false);
+  //   }
+  // };
+
+  //tính toán data để truyền cho chart
+  const calDataChart = () => {
+    let arr = [];
+    if (unit === '°C') {
+      for (var i = 1; i < 9; ++i) {
+        arr.push(Math.floor(hourInfor.list[i].main.temp - 272.15));
+      }
+    } else {
+      for (var i = 1; i < 9; ++i) {
+        arr.push(Math.floor((hourInfor.list[i].main.temp * 9) / 5 - 459.67));
+      }
+    }
+    return arr;
+  };
+
+  //tính thời gian cho phía dưới chart
+  const calDataTime = () => {
+    let arr = [];
+    for (var i = 1; i < 9; ++i) {
+      arr.push({
+        icon: hourInfor.list[i].weather[0].icon,
+        time: hourInfor.list[i].dt_txt.slice(11, 16),
+      });
+    }
+    return arr;
+  };
   const setInforTemp = () => {
     if (unit === '°C') {
       return [
@@ -1297,18 +1318,13 @@ const MainView = props => {
       ];
     }
   };
-  async function getInformaiton() {
-    const result = await getByName(input.current);
-    //console.log('infor', result);
-    if (result !== undefined) {
-      setHourInfor(result.hour);
-      setDayInfor(result.day);
-    } else showToast();
-  }
+  //đổi thành phố
   const changeCity = async () => {
     Keyboard.dismiss();
     await getInformaiton();
+    // await getSaved();
   };
+  //refresh
   const onRefresh = () => {
     setLoading(true);
     getInformaiton();
@@ -1316,126 +1332,127 @@ const MainView = props => {
       setLoading(false);
     }, 2000);
   };
+  //liên quan đến Tab
   const handleIndexChange = index => {
     navigationState.index = index;
   };
+  //toast khi tìm kiếm hỏng
   const showToast = () => {
     ToastAndroid.show('Khong co thanh pho trong he thong!', ToastAndroid.SHORT);
   };
+  //chạy animation hiện drawer
+  const showDrawer = () => {
+    Animated.timing(widthDrawer, {
+      toValue: ScreenWidth,
+      duration: 100,
+      useNativeDriver: false,
+    }).start();
+  };
+  //chạy animation hideDrawer
+  const hideDrawer = () => {
+    Animated.timing(widthDrawer, {
+      toValue: 0,
+      duration: 100,
+      useNativeDriver: false,
+    }).start();
+  };
+  //lưu địa điểm
+  // const save = async () => {
+  //   if (!isSave) {
+  //     await saveCity(dayInfor.city_name);
+  //     savedCities.push(dayInfor.city_name);
+  //     console.log(`savedCities`, savedCities);
+  //   } else {
+  //     await deleteCity(dayInfor.city_name);
+  //     let newArr = [...savedCities];
+  //     let order = newArr.indexOf(dayInfor.city_name);
+  //     newArr.splice(order, 1);
+  //     setSavedCities(newArr);
+  //     console.log(`savedCities`, savedCities);
+  //   }
+  //   setIsSave(!isSave);
+  // };
+  //chọn thành phố trong danh sách đã lưu
+  // const choosedCity = city => {
+  //   input.current = city;
+  //   changeCity();
+  // };
   return (
     <SafeAreaView style={styles.container}>
-      <MenuDrawer
-        open={drawer}
-        drawerContent={
-          <View style={{backgroundColor: '#fff', flex: 1}}>
-            <View style={{height: 100, backgroundColor: '#99ccff'}}></View>
-            <View style={{marginTop: 30, marginHorizontal: 20}}>
-              <Text style={{fontWeight: 'bold', fontSize: 20}}>Unit</Text>
-              <View style={{flexDirection: 'row', marginTop: 20}}>
-                <TouchableOpacity
-                  style={{
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    width: 40,
-                    height: 30,
-                    borderRadius: 3,
-                    backgroundColor: unit === '°C' ? '#d9d9d9' : '#fff',
-                  }}
-                  onPress={() => {
-                    setDrawer(false);
-                    setUnit('°C');
-                  }}>
-                  <Text style={{fontSize: 20}}>°C</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    marginLeft: 20,
-                    width: 40,
-                    height: 30,
-                    borderRadius: 3,
-                    backgroundColor: unit === '°F' ? '#d9d9d9' : '#fff',
-                  }}
-                  onPress={() => {
-                    setDrawer(false);
-                    setUnit('°F');
-                  }}>
-                  <Text style={{fontSize: 20}}>°F</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+      <View style={{backgroundColor: '#3399ff'}}>
+        <View style={styles.header}>
+          <TouchableOpacity style={{marginLeft: 10}} onPress={showDrawer}>
+            <Octicons name="three-bars" size={26} color="#a6a6a6" />
+          </TouchableOpacity>
+          <View style={{marginHorizontal: 20, flex: 1}}>
+            <TextInput
+              style={{
+                backgroundColor: '#f2f2f2',
+                height: 40,
+                borderRadius: 5,
+              }}
+              placeholder="Search place"
+              defaultValue={input.current}
+              onChangeText={text => {
+                input.current = text;
+              }}
+            />
           </View>
-        }
-        drawerPercentage={80}
-        opacity={0.4}>
-        <View style={{backgroundColor: '#3399ff'}}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={{marginLeft: 10}}
-              onPress={() => {
-                setDrawer(true);
-              }}>
-              <Octicons name="three-bars" size={26} color="#a6a6a6" />
-            </TouchableOpacity>
-            <View style={{marginHorizontal: 20, flex: 1}}>
-              <TextInput
-                style={{
-                  backgroundColor: '#f2f2f2',
-                  height: 40,
-                  borderRadius: 5,
-                }}
-                placeholder="Search place"
-                defaultValue={input.current}
-                onChangeText={text => {
-                  input.current = text;
-                }}
-              />
-            </View>
-            <TouchableOpacity style={{marginRight: 10}} onPress={changeCity}>
-              <Octicons name="search" size={20} color="#a6a6a6" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={{marginRight: 10}} onPress={changeCity}>
+            <Octicons name="search" size={20} color="#a6a6a6" />
+          </TouchableOpacity>
         </View>
+      </View>
 
-        <TouchableWithoutFeedback
-          onPress={() => {
-            setDrawer(false);
-            // console.log(`drawer`, drawer);
-            Keyboard.dismiss();
-          }}
-          style={{}}>
-          <TabView
-            navigationState={navigationState}
-            onIndexChange={handleIndexChange}
-            renderScene={SceneMap({
-              today: () => (
-                <ScrollView
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={loading}
-                      onRefresh={onRefresh}
-                    />
-                  }>
-                  <View
-                    style={{
-                      height: ScreenHeight - 120,
-                      backgroundColor: '#66b3ff',
-                      justifyContent: 'space-between',
-                    }}>
-                    <Text
-                      style={[
-                        styles.text,
-                        {
-                          fontSize: 20,
-                          fontWeight: '700',
-                          color: '#fff',
-                          marginLeft: 10,
-                          marginTop: 10,
-                        },
-                      ]}>
-                      {dayInfor.city_name}, {dayInfor.country_code}
-                    </Text>
+      <TouchableWithoutFeedback
+        onPress={() => {
+          Keyboard.dismiss();
+        }}
+        style={{}}>
+        <TabView
+          navigationState={navigationState}
+          onIndexChange={handleIndexChange}
+          renderScene={SceneMap({
+            today: () => (
+              <ScrollView
+                refreshControl={
+                  <RefreshControl refreshing={loading} onRefresh={onRefresh} />
+                }>
+                <View
+                  style={{
+                    height: ScreenHeight - 120,
+                    backgroundColor: '#66b3ff',
+
+                    justifyContent: 'space-between',
+                  }}>
+                  <View>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        marginTop: 20,
+                      }}>
+                      <Text
+                        style={[
+                          styles.text,
+                          {
+                            fontSize: 26,
+                            fontWeight: '700',
+                            color: '#fff',
+                            marginLeft: 20,
+                          },
+                        ]}>
+                        {dayInfor.city_name}, {dayInfor.country_code}
+                      </Text>
+                      {/* <TouchableOpacity onPress={save}>
+                        <FontAwesome
+                          name={isSave ? 'star' : 'star-o'}
+                          color="#fff"
+                          size={20}
+                          style={{marginLeft: 15}}
+                        />
+                      </TouchableOpacity> */}
+                    </View>
 
                     <View style={styles.mainWeather}>
                       <View
@@ -1556,145 +1573,151 @@ const MainView = props => {
                         </Text>
                       </View>
                     </View>
-                    <View style={{}}>
-                      <ScrollView horizontal={true} style={{}}>
-                        <View
-                          style={{
-                            flexDirection: 'column',
-                            width: 730,
-                            marginHorizontal: 10,
-                          }}>
-                          <AreaChart
-                            style={{height: 100}}
-                            data={dataChart}
-                            contentInset={{top: 20, bottom: 20}}
-                            svg={{fill: 'url(#gradient)'}}>
-                            <Gradient />
-                          </AreaChart>
-                          <View
-                            style={{
-                              flexDirection: 'row',
-                              justifyContent: 'space-between',
-                              marginTop: 20,
-                            }}>
-                            {dataTime.map((value, index) => {
-                              return (
-                                <TouchableOpacity
-                                  key={index}
-                                  style={{
-                                    backgroundColor:
-                                      index === selectedTime ? '#0099e6' : null,
-                                    width: 60,
-                                    height: 120,
-                                    justifyContent: 'space-around',
-                                    alignItems: 'center',
-                                    borderRadius: 5,
-                                  }}
-                                  onPress={() => {
-                                    setSelectedTime(index);
-                                  }}>
-                                  <Image
-                                    style={{width: 60, height: 60}}
-                                    source={{
-                                      uri: `http://openweathermap.org/img/wn/${value.icon}@2x.png`,
-                                    }}
-                                  />
-                                  <Text
-                                    style={{
-                                      ...styles.text,
-                                      color: '#fff',
-                                      fontSize: 16,
-                                    }}>
-                                    {value.time}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            })}
-                          </View>
-                        </View>
-                      </ScrollView>
-                    </View>
                   </View>
 
-                  <View style={{marginTop: 50, marginBottom: 10}}>
-                    <View style={styles.sectionView}>
-                      <View style={{marginVertical: 5}}>
-                        <Table
-                          title="Temperature details"
-                          arrKey={[
-                            'Temp',
-                            'Feell like',
-                            'Temp min',
-                            'Temp max',
-                            'Pressure',
-                            'Sea levle',
-                            'Humidity',
-                          ]}
-                          arrValue={arrValTemp}
-                        />
+                  <View style={{}}>
+                    <ScrollView horizontal={true} style={{}}>
+                      <View
+                        style={{
+                          flexDirection: 'column',
+                          width: 730,
+                          marginHorizontal: 10,
+                        }}>
+                        <AreaChart
+                          style={{height: 100}}
+                          data={dataChart}
+                          contentInset={{top: 20, bottom: 20}}
+                          svg={{fill: 'url(#gradient)'}}>
+                          <Gradient />
+                        </AreaChart>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            marginTop: 20,
+                          }}>
+                          {dataTime.map((value, index) => {
+                            return (
+                              <TouchableOpacity
+                                key={index}
+                                style={{
+                                  backgroundColor:
+                                    index === selectedTime ? '#0099e6' : null,
+                                  width: 60,
+                                  height: 120,
+                                  justifyContent: 'space-around',
+                                  alignItems: 'center',
+                                  borderRadius: 5,
+                                }}
+                                onPress={() => {
+                                  setSelectedTime(index);
+                                }}>
+                                <Image
+                                  style={{width: 60, height: 60}}
+                                  source={{
+                                    uri: `http://openweathermap.org/img/wn/${value.icon}@2x.png`,
+                                  }}
+                                />
+                                <Text
+                                  style={{
+                                    ...styles.text,
+                                    color: '#fff',
+                                    fontSize: 16,
+                                  }}>
+                                  {value.time}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
                       </View>
-                    </View>
-                    <View style={styles.sectionView}>
-                      <View style={{marginVertical: 5}}>
-                        <Table
-                          title="Wind"
-                          arrKey={['Speed', 'Direction', 'Gust']}
-                          arrValue={arrValWind}
-                        />
-                      </View>
-                    </View>
-                    <View style={styles.sectionView}>
-                      <View style={{marginVertical: 5}}>
-                        <Table
-                          title="Clouds"
-                          arrKey={['Cloudiness']}
-                          arrValue={arrValClound}
-                        />
-                      </View>
-                    </View>
-                    <View style={styles.sectionView}>
-                      <View style={{marginVertical: 5}}>
-                        <Table
-                          title="Visibility"
-                          arrKey={['Visibility']}
-                          arrValue={arrValVisibility}
-                        />
-                      </View>
-                    </View>
-                    <View style={styles.sectionView}>
-                      <View style={{marginVertical: 5}}>
-                        <Table
-                          title="More hourInfors"
-                          arrKey={[
-                            'City',
-                            'Country',
-                            'Coordinate.Lat',
-                            'Coordinate.Lon',
-                          ]}
-                          arrValue={arrValInfor}
-                        />
-                      </View>
+                    </ScrollView>
+                  </View>
+                </View>
+
+                <View style={{marginTop: 50, marginBottom: 10}}>
+                  <View style={styles.sectionView}>
+                    <View style={{marginVertical: 5}}>
+                      <Table
+                        title="Temperature details"
+                        arrKey={[
+                          'Temp',
+                          'Feell like',
+                          'Temp min',
+                          'Temp max',
+                          'Pressure',
+                          'Sea levle',
+                          'Humidity',
+                        ]}
+                        arrValue={arrValTemp}
+                      />
                     </View>
                   </View>
-                </ScrollView>
-              ),
-              future: () => (
-                <ScrollView
-                  refreshControl={
-                    <RefreshControl
-                      refreshing={loading}
-                      onRefresh={onRefresh}
-                    />
-                  }>
-                  {dayInfor.data.map((value, index) => {
-                    return <TagDay data={value} unit={unit} key={index} />;
-                  })}
-                </ScrollView>
-              ),
-            })}
-          />
-        </TouchableWithoutFeedback>
-      </MenuDrawer>
+                  <View style={styles.sectionView}>
+                    <View style={{marginVertical: 5}}>
+                      <Table
+                        title="Wind"
+                        arrKey={['Speed', 'Direction', 'Gust']}
+                        arrValue={arrValWind}
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.sectionView}>
+                    <View style={{marginVertical: 5}}>
+                      <Table
+                        title="Clouds"
+                        arrKey={['Cloudiness']}
+                        arrValue={arrValClound}
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.sectionView}>
+                    <View style={{marginVertical: 5}}>
+                      <Table
+                        title="Visibility"
+                        arrKey={['Visibility']}
+                        arrValue={arrValVisibility}
+                      />
+                    </View>
+                  </View>
+                  <View style={styles.sectionView}>
+                    <View style={{marginVertical: 5}}>
+                      <Table
+                        title="More hourInfors"
+                        arrKey={[
+                          'City',
+                          'Country',
+                          'Coordinate.Lat',
+                          'Coordinate.Lon',
+                        ]}
+                        arrValue={arrValInfor}
+                      />
+                    </View>
+                  </View>
+                </View>
+              </ScrollView>
+            ),
+            future: () => (
+              <ScrollView
+                refreshControl={
+                  <RefreshControl refreshing={loading} onRefresh={onRefresh} />
+                }>
+                {dayInfor.data.map((value, index) => {
+                  return <TagDay data={value} unit={unit} key={index} />;
+                })}
+              </ScrollView>
+            ),
+          })}
+        />
+      </TouchableWithoutFeedback>
+      <Drawer
+        width={widthDrawer}
+        unit={unit}
+        hideDrawer={hideDrawer}
+        setUnit={setUnit}
+        //savedCities={savedCities}
+        //choosedCity={choosedCity}
+      />
     </SafeAreaView>
   );
 };

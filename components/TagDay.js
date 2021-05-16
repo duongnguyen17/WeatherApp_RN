@@ -20,13 +20,16 @@ const TagDay = props => {
   }, []);
   const setValue = () => {
     return [
-      Number.parseFloat(data.wind_spd).toFixed(2) + 'm/s',
-      data.wind_dir + '°',
-      Number.parseFloat(data.wind_gust_spd).toFixed(2) + 'm/s',
-      data.rh + '%',
+      Number.parseFloat(data.wind_spd).toFixed(2) + ' m/s',
+      data.wind_dir + ' °',
+      Number.parseFloat(data.wind_gust_spd).toFixed(2) + ' m/s',
+      data.rh + ' %',
       Number.parseFloat(data.uv).toFixed(2),
-      data.clouds_hi + '%',
-      Number.parseFloat(data.vis * 1000).toFixed(1) + 'm',
+      data.clouds_hi + ' %',
+      Number.parseFloat(data.vis )
+        .toFixed(2)
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ',') +  ' km',
     ];
   };
   const show = () => {
